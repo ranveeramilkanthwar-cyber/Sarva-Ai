@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Sarva AI - Voice System</title>
+    <style>
+        body { background: radial-gradient(circle at center, #111827 0%, #000000 100%); }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .orb-glow { box-shadow: 0 0 60px rgba(6, 182, 212, 0.3); }
+        
+        /* Animated Beam Effect */
+        .beam {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            left: -100%;
+            transition: 0.5s;
+        }
+        .loading .beam { animation: scan 1.5s infinite; }
+        @keyframes scan { 0% { left: -100%; } 100% { left: 100%; } }
+    </style>
+</head>
+<body class="text-slate-200 h-screen flex flex-col items-center justify-center overflow-hidden">
+
+    <div id="app-container" class="glass w-[90%] max-w-md rounded-3xl p-8 flex flex-col items-center relative overflow-hidden">
+        
+        <div class="w-full flex justify-between items-center mb-10">
+            <span class="text-cyan-400 font-mono text-[10px] tracking-[0.3em] uppercase">Sarva Alpha v1.0</span>
+            <div id="connection-dot" class="h-2 w-2 bg-green-500 rounded-full"></div>
+        </div>
+
+        <div id="mic-btn" class="relative group cursor-pointer mb-8">
+            <div class="absolute inset-0 bg-cyan-500 rounded-full blur-3xl opacity-5 group-active:opacity-20 transition-opacity"></div>
+            <div class="orb-glow w-36 h-36 rounded-full glass flex items-center justify-center transition-transform group-active:scale-95 border-cyan-500/20">
+                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="text-center space-y-3 z-10">
+            <p id="status" class="text-cyan-400 text-xs font-semibold uppercase tracking-widest">Awaiting Command</p>
+            <p id="transcript" class="text-zinc-500 italic text-sm px-4">"Tap to activate voice input..."</p>
+        </div>
+
+        <div class="beam"></div>
+    </div>
+
+    <p class="mt-8 text-zinc-600 text-[10px] uppercase tracking-tighter">Connected to Telegram Bot</p>
+
+    <script>
+        // --- CONFIGURATION ---
+        const BOT_TOKEN = "8474321225:AAHkcdDXSGJfSU46RlrNfqrTcGOaiCwvWjY";
+        const USER_ID = "6572151527";
+
+        const micBtn = document.getElementById('mic-btn');
+        const statusText = document.getElementById('status');
+        const transcriptText = document.getElementById('transcript');
+        const container = document.getElementById('app-container');
+
+        // Initialize Web Speech API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            statusText.innerText = "Error";
+            transcriptText.innerText = "Browser does not support speech recognition.";
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+
+            micBtn.onclick = () => {
+                recognition.start();
+                updateUI("Listening...", "Say something like 'Open WhatsApp'", true);
+            };
+
+            recognition.onresult = async (event) => {
+                const speech = event.results[0][0].transcript;
+                updateUI("Processing...", `"${speech}"`, false);
+                container.classList.add('loading');
+
+                // Send to Telegram Bot
+                await sendToTelegram(speech);
+            };
+
+            recognition.onerror = () => {
+                updateUI("Error", "Speech not recognized. Try again.", false);
+                container.classList.remove('loading');
+            };
+        }
+
+        async function sendToTelegram(message) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: USER_ID,
+                        text: `SARVA_CMD: ${message}`
+                    })
+                });
+
+                if (response.ok) {
+                    updateUI("Sent", "Command sent to phone system.", false);
+                } else {
+                    updateUI("Failed", "Bot connection error.", false);
+                }
+            } catch (error) {
+                updateUI("Offline", "Check your internet connection.", false);
+            } finally {
+                setTimeout(() => {
+                    container.classList.remove('loading');
+                    updateUI("Awaiting Command", "Tap to activate voice input...", false);
+                }, 3000);
+            }
+        }
+
+        function updateUI(status, transcript, active) {
+            statusText.innerText = status;
+            transcriptText.innerText = transcript;
+            const icon = document.getElementById('mic-icon');
+            icon.classList.toggle('text-cyan-400', active);
+            icon.classList.toggle('text-zinc-600', !active);
+        }
+    </script>
+</body>
+</html>
