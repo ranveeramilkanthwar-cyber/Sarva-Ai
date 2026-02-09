@@ -4,126 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Sarva AI - Voice System</title>
+    <title>Sarva AI Assistant</title>
     <style>
-        body { background: radial-gradient(circle at center, #111827 0%, #000000 100%); }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .orb-glow { box-shadow: 0 0 60px rgba(6, 182, 212, 0.3); }
+        body { background: radial-gradient(circle at center, #0f172a 0%, #000000 100%); }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .orb-glow { box-shadow: 0 0 50px rgba(6, 182, 212, 0.15); }
+        .silk-transition { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
         
-        /* Animated Beam Effect */
-        .beam {
+        /* Loading Animation */
+        .scan-line {
             height: 2px;
-            background: linear-gradient(90deg, transparent, #22d3ee, transparent);
             width: 100%;
+            background: linear-gradient(90deg, transparent, #22d3ee, transparent);
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: -100%;
-            transition: 0.5s;
         }
-        .loading .beam { animation: scan 1.5s infinite; }
+        .is-loading .scan-line { animation: scan 2s infinite linear; }
         @keyframes scan { 0% { left: -100%; } 100% { left: 100%; } }
     </style>
 </head>
-<body class="text-slate-200 h-screen flex flex-col items-center justify-center overflow-hidden">
+<body class="text-slate-100 flex flex-col h-screen font-sans items-center justify-center p-4">
 
-    <div id="app-container" class="glass w-[90%] max-w-md rounded-3xl p-8 flex flex-col items-center relative overflow-hidden">
+    <div id="sarva-card" class="glass-panel w-full max-w-sm rounded-[2.5rem] p-8 flex flex-col items-center relative overflow-hidden silk-transition">
         
-        <div class="w-full flex justify-between items-center mb-10">
-            <span class="text-cyan-400 font-mono text-[10px] tracking-[0.3em] uppercase">Sarva Alpha v1.0</span>
-            <div id="connection-dot" class="h-2 w-2 bg-green-500 rounded-full"></div>
+        <div class="scan-line"></div>
+
+        <div class="w-full flex justify-between items-center mb-8">
+            <div class="flex flex-col">
+                <h1 class="text-cyan-400 font-black tracking-tighter text-2xl">SARVA</h1>
+                <span id="status" class="text-[9px] text-zinc-500 uppercase tracking-widest">System Online</span>
+            </div>
+            <div class="h-2 w-2 bg-cyan-500 rounded-full animate-pulse"></div>
         </div>
 
-        <div id="mic-btn" class="relative group cursor-pointer mb-8">
-            <div class="absolute inset-0 bg-cyan-500 rounded-full blur-3xl opacity-5 group-active:opacity-20 transition-opacity"></div>
-            <div class="orb-glow w-36 h-36 rounded-full glass flex items-center justify-center transition-transform group-active:scale-95 border-cyan-500/20">
-                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        <div id="mic-btn" class="relative cursor-pointer group mb-10 silk-transition">
+            <div class="absolute inset-0 bg-cyan-500 rounded-full blur-3xl opacity-0 group-active:opacity-20 transition-opacity"></div>
+            <div class="orb-glow w-40 h-40 rounded-full glass-panel flex items-center justify-center group-active:scale-90 border-cyan-500/20">
+                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
             </div>
         </div>
 
-        <div class="text-center space-y-3 z-10">
-            <p id="status" class="text-cyan-400 text-xs font-semibold uppercase tracking-widest">Awaiting Command</p>
-            <p id="transcript" class="text-zinc-500 italic text-sm px-4">"Tap to activate voice input..."</p>
+        <div class="w-full flex gap-2 mb-8">
+            <input type="text" id="text-input" placeholder="Type a command..." 
+                   class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500/50 transition-colors">
+            <button id="send-btn" class="bg-gradient-to-r from-cyan-600 to-blue-600 p-3 rounded-2xl shadow-lg shadow-cyan-900/20 hover:scale-105 active:scale-95 silk-transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+            </button>
         </div>
 
-        <div class="beam"></div>
+        <div class="text-center">
+            <p id="display-text" class="text-zinc-500 text-sm italic font-medium">Waiting for input...</p>
+            <p id="error-log" class="text-[9px] text-red-400 mt-2 uppercase hidden"></p>
+        </div>
     </div>
 
-    <p class="mt-8 text-zinc-600 text-[10px] uppercase tracking-tighter">Connected to Telegram Bot</p>
-
     <script>
-        // --- CONFIGURATION ---
         const BOT_TOKEN = "8474321225:AAHkcdDXSGJfSU46RlrNfqrTcGOaiCwvWjY";
         const USER_ID = "6572151527";
 
         const micBtn = document.getElementById('mic-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const textInput = document.getElementById('text-input');
+        const displayText = document.getElementById('display-text');
         const statusText = document.getElementById('status');
-        const transcriptText = document.getElementById('transcript');
-        const container = document.getElementById('app-container');
+        const card = document.getElementById('sarva-card');
+        const errorLog = document.getElementById('error-log');
 
-        // Initialize Web Speech API
+        // --- Voice Logic ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            statusText.innerText = "Error";
-            transcriptText.innerText = "Browser does not support speech recognition.";
-        } else {
+        if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-
-            micBtn.onclick = () => {
-                recognition.start();
-                updateUI("Listening...", "Say something like 'Open WhatsApp'", true);
-            };
-
-            recognition.onresult = async (event) => {
-                const speech = event.results[0][0].transcript;
-                updateUI("Processing...", `"${speech}"`, false);
-                container.classList.add('loading');
-
-                // Send to Telegram Bot
-                await sendToTelegram(speech);
-            };
-
-            recognition.onerror = () => {
-                updateUI("Error", "Speech not recognized. Try again.", false);
-                container.classList.remove('loading');
-            };
+            micBtn.onclick = () => recognition.start();
+            recognition.onstart = () => updateUI("Listening", "I'm listening...", true);
+            recognition.onresult = (e) => processCommand(e.results[0][0].transcript);
+            recognition.onerror = () => updateUI("Ready", "Speech error. Try again.", false);
         }
 
-        async function sendToTelegram(message) {
+        // --- Text Logic ---
+        sendBtn.onclick = () => {
+            if (textInput.value.trim()) {
+                processCommand(textInput.value);
+                textInput.value = "";
+            }
+        };
+
+        textInput.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
+
+        async function processCommand(cmd) {
+            updateUI("Processing", `"${cmd}"`, true);
+            card.classList.add('is-loading');
+            
             try {
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: USER_ID,
-                        text: `SARVA_CMD: ${message}`
-                    })
+                    body: JSON.stringify({ chat_id: USER_ID, text: `SARVA_CMD: ${cmd}` })
                 });
 
-                if (response.ok) {
-                    updateUI("Sent", "Command sent to phone system.", false);
+                if (res.ok) {
+                    updateUI("Sent", "Command transmitted.", false);
                 } else {
-                    updateUI("Failed", "Bot connection error.", false);
+                    const data = await res.json();
+                    showError(`Error ${res.status}: ${data.description}`);
                 }
-            } catch (error) {
-                updateUI("Offline", "Check your internet connection.", false);
+            } catch (err) {
+                showError("Network connection blocked.");
             } finally {
-                setTimeout(() => {
-                    container.classList.remove('loading');
-                    updateUI("Awaiting Command", "Tap to activate voice input...", false);
-                }, 3000);
+                setTimeout(resetUI, 3000);
             }
         }
 
-        function updateUI(status, transcript, active) {
+        function updateUI(status, msg, loading) {
             statusText.innerText = status;
-            transcriptText.innerText = transcript;
-            const icon = document.getElementById('mic-icon');
-            icon.classList.toggle('text-cyan-400', active);
-            icon.classList.toggle('text-zinc-600', !active);
+            displayText.innerText = msg;
+            if (loading) card.classList.add('is-loading');
+            else card.classList.remove('is-loading');
+            errorLog.classList.add('hidden');
+        }
+
+        function showError(msg) {
+            errorLog.innerText = msg;
+            errorLog.classList.remove('hidden');
+            statusText.innerText = "Failed";
+            card.classList.remove('is-loading');
+        }
+
+        function resetUI() {
+            statusText.innerText = "System Online";
+            displayText.innerText = "Waiting for input...";
+            card.classList.remove('is-loading');
         }
     </script>
 </body>
